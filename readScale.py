@@ -5,6 +5,7 @@ SCALELIGHT_ON = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&c
 SCALELIGHT_OFF = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
 BAGGERSWITCH_ON = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
 BAGGERSWITCH_OFF = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
+LIGHTSTATUS = str(requests.get(url = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[13:-2]
 
 def parseData(data):
     
@@ -27,9 +28,10 @@ while run:
     print (weights )
     print (previousweight)
     if (previousweight + weights[1] > weights[0] + weights[1]/sensitivity or  previousweight + weights[1] < weights[0] - weights[1]/sensitivity):
-        requests.post(url = BAGGERSWITCH_ON)
-        print ("tripped")
-        time.sleep(1)
+        while (LIGHTSTATUS == "ON"):
+            requests.post(url = BAGGERSWITCH_ON)
+            print ("tripped")
+            time.sleep(1)
         requests.post(url = BAGGERSWITCH_OFF)
         previousweight = weights[0]
         continue
