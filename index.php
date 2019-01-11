@@ -1,20 +1,19 @@
 <?php
     if($_SERVER['REQUEST_METHOD'] === 'POST'){
         if(isset($_POST["startscale"])){
-            $message = "Running".$input;
-            exec('touch /var/www/html/stop-script');
-            sleep(4);
             exec("rm /var/www/html/stop-script");
-            $pid = exec("python /var/www/html/stuff.py> /dev/null 2>&1 & echo $!; ", $output);
-            echo $pid;
+            $pid = exec("/home/pi/scale/bin/python /home/pi/scale/readScale.py> /dev/null 2>&1 & echo $!; ", $output);
+            $message = "Running".$input;
         }else if($_POST["stopscale"]){
             $stopoutput = exec('touch /var/www/html/stop-script');
-            echo $stopoutput;
+            $message = "Stopped".$input;
         }else if($_POST["resetscale"]){
-            $stopoutput = exec('touch /var/www/html/stop-script');
-            sleep(4);
+            exec('touch /var/www/html/stop-script');
+            sleep(2);
             exec("rm /var/www/html/stop-script");
-            $pid = exec("python /var/www/html/stuff.py> /dev/null 2>&1 & echo $!; ", $output);
+            $pid = exec("/home/pi/scale/bin/python /home/pi/scale/readScale.py> /dev/null 2>&1 & echo $!; ", $output);
+            $message = "Running".$input;
+
         }
     }
 
@@ -25,7 +24,7 @@
 <html lang="en">
 <body>
 <h1> Read Scale</h1>
-    <form action="index.html" method="POST">
+    <form action="" method="POST">
         <h2><br>Status: <?php echo $message; ?></h2>
        <!----Box Quantity: <input type ="text" name = "boxQty"><br>
         Lot Number:<input type ="text" name = "lotNumber"><br>

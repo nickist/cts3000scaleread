@@ -1,13 +1,16 @@
+#!/home/pi/scale/bin/python3
+
 import serial
 import time
 import os
 import requests
+import logging
 
 SCALELIGHT_ON = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
 SCALELIGHT_OFF = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
 BAGGERSWITCH_ON = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
 BAGGERSWITCH_OFF = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
-
+logging.basicConfig(filename='/home/pi/scale/readScale.log', level=logging.INFO)
 class data:
     generalWeight = 0
     unitWeight = 0
@@ -37,7 +40,6 @@ def readdata():
     while (x < 3):
         dataIn = parseData(ser.readline().decode('ascii', 'ignore'))
         if(dataIn == -1):
-            print ("crap")
             continue
         elif (x == 0):
             x+=1
@@ -50,33 +52,45 @@ def readdata():
             x+=1
             data.partCount = dataIn
     ser.close()
-
-#def scaleRead():
+logging.info('Begin program set switches off')
 requests.post(url = BAGGERSWITCH_OFF)
 requests.post(url = SCALELIGHT_OFF)
 bagswitchstatus = False
+logging.info('Reading initial data...')
 readdata()
 previousweight = data.generalWeight
-while True:
-    readdata()
-    sensitivity = 12
-    print ("general1: " + str(data.generalWeight)+"\n")
-    print ("unit1: " + str(data.unitWeight)+"\n")
-    print ("count1: " + str(data.partCount)+"\n")
-
-    if (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
-        requests.post(url=SCALELIGHT_ON)
-        requests.post(url=BAGGERSWITCH_ON)
-        bagswitchstatus = True
-        while (bagswitchstatus):
-            if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
-                time.sleep(2)
-                print ("tripped")
-            else:
+try:
+    while True:
+        try:
+            if (os.path.isfile('/var/www/html/stop-script')):
+                requests.post(url = BAGGERSWITCH_OFF)
+                os.remove('/var/www/html/stop-script')
+                requests.post(url = SCALELIGHT_OFF)
                 bagswitchstatus = False
-                requests.post(url=BAGGERSWITCH_OFF)
-                readdata()
-                previousweight = data.generalWeight
-    else:
-        print("pass")
-        previousweight = data.generalWeight
+                break 
+        except IOError as e:
+            logging.error('I/O error occurred' + str(e))
+            break
+        readdata()
+        sensitivity = 12
+
+        if (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
+                requests.post(url=SCALELIGHT_ON)
+                requests.post(url=BAGGERSWITCH_ON)
+                bagswitchstatus = True
+                while (bagswitchstatus):
+                    if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
+                        time.sleep(2)
+                    else:
+                        bagswitchstatus = False
+                        requests.post(url=BAGGERSWITCH_OFF)
+                        readdata()
+                        previousweight = data.generalWeight
+        else:
+            previousweight = data.generalWeight
+except IOError as e:
+    logging.error('Some I/O error occurred' + str(e))
+except ValueError as ve:
+    logging.error('some value error occurred ' + str(e)) 
+except Exception as E:
+    logging.error('some exception occurred ' + str(E))
