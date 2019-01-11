@@ -16,6 +16,12 @@ class data:
     unitWeight = 0
     partCount = 0
 
+def writefile(filedata):
+    if (os.path.isfile('/home/pi/scale/status')):
+        os.remove('/home/pi/scale/status')
+    status_file = open("/home/pi/scale/status", "w")
+    status_file.write("%s" % filedata)
+
 def parseData(datain):
     returndata = ''
     for letter in datain:
@@ -56,8 +62,11 @@ logging.info('Begin program set switches off')
 requests.post(url = BAGGERSWITCH_OFF)
 requests.post(url = SCALELIGHT_OFF)
 bagswitchstatus = False
+if (os.path.isfile('/var/www/html/stop-script')):
+    os.remove("/var/www/html/stop-script")
 logging.info('Reading initial data...')
 readdata()
+writefile("Running")
 previousweight = data.generalWeight
 try:
     while True:
@@ -67,9 +76,12 @@ try:
                 os.remove('/var/www/html/stop-script')
                 requests.post(url = SCALELIGHT_OFF)
                 bagswitchstatus = False
+                writefile("Stopped")
+                logging.info('Stopped')
                 break 
         except IOError as e:
             logging.error('I/O error occurred' + str(e))
+            writefile("Error")
             break
         readdata()
         sensitivity = 12
@@ -78,6 +90,7 @@ try:
                 requests.post(url=SCALELIGHT_ON)
                 requests.post(url=BAGGERSWITCH_ON)
                 bagswitchstatus = True
+                writefile("Tripped")
                 while (bagswitchstatus):
                     if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
                         time.sleep(2)
@@ -86,11 +99,15 @@ try:
                         requests.post(url=BAGGERSWITCH_OFF)
                         readdata()
                         previousweight = data.generalWeight
+                writefile("Running")
         else:
             previousweight = data.generalWeight
 except IOError as e:
-    logging.error('Some I/O error occurred' + str(e))
+    writefile("Error")
+    logging.error('Some I/O error occurred ' + str(e))
 except ValueError as ve:
+    writefile("Error")
     logging.error('some value error occurred ' + str(e)) 
 except Exception as E:
+    writefile("Error")
     logging.error('some exception occurred ' + str(E))

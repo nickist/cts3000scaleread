@@ -1,19 +1,28 @@
 <?php
+    $myfile = fopen("/home/pi/scale/status", "r") or die("Unable to open file!");
+    $message = fread($myfile,filesize("/home/pi/scale/status"));
+    fclose($myfile);
     if($_SERVER['REQUEST_METHOD'] === 'POST'){
         if(isset($_POST["startscale"])){
-            exec("rm /var/www/html/stop-script");
             $pid = exec("/home/pi/scale/bin/python /home/pi/scale/readScale.py> /dev/null 2>&1 & echo $!; ", $output);
-            $message = "Running".$input;
+            sleep(2);
+            $myfile = fopen("/home/pi/scale/status", "r") or die("Unable to open file!");
+            $message = fread($myfile,filesize("/home/pi/scale/status"));
+            fclose($myfile);
         }else if($_POST["stopscale"]){
+            $myfile = fopen("/home/pi/scale/status", "r") or die("Unable to open file!");
             $stopoutput = exec('touch /var/www/html/stop-script');
-            $message = "Stopped".$input;
+            sleep(2);
+            $message = fread($myfile,filesize("/home/pi/scale/status"));
+            fclose($myfile);
         }else if($_POST["resetscale"]){
             exec('touch /var/www/html/stop-script');
             sleep(2);
-            exec("rm /var/www/html/stop-script");
             $pid = exec("/home/pi/scale/bin/python /home/pi/scale/readScale.py> /dev/null 2>&1 & echo $!; ", $output);
-            $message = "Running".$input;
-
+            sleep(2);
+            $myfile = fopen("/home/pi/scale/status", "r") or die("Unable to open file!");
+            $message = fread($myfile,filesize("/home/pi/scale/status"));
+            fclose($myfile);
         }
     }
 
