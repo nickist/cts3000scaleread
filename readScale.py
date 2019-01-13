@@ -5,6 +5,7 @@ import time
 import os
 import requests
 import logging
+sensitivity = 10
 
 SCALELIGHT_ON = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
 SCALELIGHT_OFF = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
@@ -84,9 +85,10 @@ try:
             writefile("Error")
             break
         readdata()
-        sensitivity = 12
-
-        if (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
+        if(previousweight <= data.generalWeight+.02 or previousweight >= data.generalWeight-.02):
+            previousweight = data.generalWeight
+            continue
+        elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
                 requests.post(url=SCALELIGHT_ON)
                 requests.post(url=BAGGERSWITCH_ON)
                 bagswitchstatus = True
