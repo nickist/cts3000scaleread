@@ -1,0 +1,8 @@
+body{
+    height: 100%;
+    background-color: bisque;
+}
+input[type=submit] {
+    width: 100px;
+    height: 100px;
+}

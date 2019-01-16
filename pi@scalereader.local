@@ -42,7 +42,7 @@ def readdata():
     ser = serial.Serial('/dev/ttyUSB0', 9600)
     ser.flushInput()
     ser.flushOutput()
-    
+
     x=0
     while (x < 3):
         dataIn = parseData(ser.readline().decode('ascii', 'ignore'))
