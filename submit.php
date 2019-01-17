@@ -1,9 +1,9 @@
 <?php   
        if($_SERVER['REQUEST_METHOD'] === 'POST'){
         if(isset($_POST["startscale"])){
-            $isrunning = exec('/home/pi/scale/checkRunningProcess.sh readScale.py');
-            if($isrunning == 'Running'){
-                echo $isrunning;
+             exec('/home/pi/scale/checkRunningProcess.sh readScale.py', $isrunning);
+            if($isrunning[0] == 'Running'){
+                echo $isrunning[0];
             }else {
                 $pid = exec("/home/pi/scale/bin/python /home/pi/scale/readScale.py> /dev/null 2>&1 & echo $!; ", $output);
             }
@@ -22,6 +22,5 @@
 </head>
 <body>
 <a href="http://scalereader.local">go Back</a>
-
 </body>
 </html>
