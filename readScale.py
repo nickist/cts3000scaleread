@@ -89,8 +89,11 @@ try:
             writefile("Error")
             break
         readdata()
-        if(previousweight <= data.generalWeight+.01 and previousweight >= data.generalWeight-.01): 
+        if(previousweight <= data.generalWeight+.002 and previousweight >= data.generalWeight-.002): 
             #if data changes less than .01 ignore data and update previous weight
+            previousweight = data.generalWeight
+            continue
+        elif(data.generalWeight < 0 or data.partCount == 0):
             previousweight = data.generalWeight
             continue
         elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
