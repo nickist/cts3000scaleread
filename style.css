@@ -1,4 +1,60 @@
 body {
     height: 100%;
-    background-color: blue;
+    background-color: cornsilk;
+}
+
+.wrapper {
+    text-align: center;
+}
+
+.start {
+    padding-bottom: 25px;
+}
+
+.stop {
+    padding-top: 25px;
+    padding-bottom: 25px;
+}
+
+.reset {
+    padding-top: 25px;
+}
+
+input[name="startscale"] {
+    background-color: green; /* Green */
+    border: none;
+    width: 90px;
+    height: 90px;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+input[name="stopscale"] {
+    background-color: red; /* Red */
+    border: none;
+    width: 90px;
+    height: 90px;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+input[name="resetscale"] {
+    background-color: grey; /* Grey */
+    border: none;
+    width: 90px;
+    height: 90px;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
 }
