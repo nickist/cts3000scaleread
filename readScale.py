@@ -69,8 +69,8 @@ try:
     requests.post(url = BAGGERSWITCH_OFF)
     requests.post(url = SCALELIGHT_OFF)
     bagswitchstatus = False
+    #check if stop script file exists and remove it if so
     if (os.path.isfile('/var/www/html/stop-script')):
-        #check if stop script file exists and remove it if so
         os.remove("/var/www/html/stop-script")
     logging.info('Reading initial data...')
     writefile("Waiting on Initial Reading")
