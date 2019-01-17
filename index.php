@@ -4,7 +4,7 @@
     fclose($myfile);
     if($message == "Running"){
         $color = '#008000';
-    }else if ($message == "Error" || $message == "Stopped"){
+    }else if ($message == "Error" || $message == "Stopped" || $message == "Error"){
         $color = '#FF0000';
     }
 
