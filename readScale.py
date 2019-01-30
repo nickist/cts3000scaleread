@@ -78,53 +78,42 @@ try:
     readdata()
     writefile("Running")
     previousweight = data.generalWeight
-    while True:
+    while (os.path.isfile('/var/www/html/stop-script')):
         try:
-            if (os.path.isfile('/var/www/html/stop-script')):
-                shutdown()
-                break 
-        except IOError as e:
+            readdata()
+            if(previousweight <= data.generalWeight+.002 and previousweight >= data.generalWeight-.002): 
+                #if data changes less than .01 ignore data and update previous weight
+                previousweight = data.generalWeight
+                continue
+            elif(data.generalWeight < 0 or data.partCount == 0):
+                previousweight = data.generalWeight
+                continue
+            elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
+                #if weight changes by more than 1/sensitivity post switch on
+                    requests.post(url=SCALELIGHT_ON)
+                    requests.post(url=BAGGERSWITCH_ON)
+                    bagswitchstatus = True
+                    writefile("Tripped")
+                    while (bagswitchstatus):
+                        if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
+                            #wait for status to change to OFF
+                            time.sleep(2)
+                        else:
+                            #once OFF set switch off and read data again
+                            bagswitchstatus = False
+                            requests.post(url=BAGGERSWITCH_OFF)
+                            writefile("Waiting on reinitialized Reading")
+                            readdata()
+                            previousweight = data.generalWeight
+                    writefile("Running")
+            else:
+                previousweight = data.generalWeight
+        except Exception as e:
             shutdown()
-            logging.error('I/O error occurred' + str(e))
             writefile("Error")
-            break
-        readdata()
-        if(previousweight <= data.generalWeight+.002 and previousweight >= data.generalWeight-.002): 
-            #if data changes less than .01 ignore data and update previous weight
-            previousweight = data.generalWeight
-            continue
-        elif(data.generalWeight < 0 or data.partCount == 0):
-            previousweight = data.generalWeight
-            continue
-        elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
-            #if weight changes by more than 1/sensitivity post switch on
-                requests.post(url=SCALELIGHT_ON)
-                requests.post(url=BAGGERSWITCH_ON)
-                bagswitchstatus = True
-                writefile("Tripped")
-                while (bagswitchstatus):
-                    if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
-                        #wait for status to change to OFF
-                        time.sleep(2)
-                    else:
-                        #once OFF set switch off and read data again
-                        bagswitchstatus = False
-                        requests.post(url=BAGGERSWITCH_OFF)
-                        writefile("Waiting on reinitialized Reading")
-                        readdata()
-                        previousweight = data.generalWeight
-                writefile("Running")
-        else:
-            previousweight = data.generalWeight
-except IOError as e:
-    shutdown()
-    writefile("Error")
-    logging.error('Some I/O error occurred ' + str(e))
-except ValueError as ve:
-    shutdown()
-    writefile("Error")
-    logging.error('some value error occurred ' + str(e)) 
+            logging.error('some exception occurred\n' + str(e))
+
 except Exception as E:
     shutdown()
     writefile("Error")
-    logging.error('some exception occurred ' + str(E))
+    logging.error('some exception occurred\n' + str(E))
