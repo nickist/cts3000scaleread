@@ -78,7 +78,7 @@ try:
     readdata()
     writefile("Running")
     previousweight = data.generalWeight
-    while (os.path.isfile('/var/www/html/stop-script')):
+    while (not os.path.isfile('/var/www/html/stop-script')):
         try:
             readdata()
             if(previousweight <= data.generalWeight+.002 and previousweight >= data.generalWeight-.002): 
