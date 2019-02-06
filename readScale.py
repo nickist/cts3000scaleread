@@ -3,8 +3,10 @@
 import serial
 import time
 import os
+import sys
 import requests
 import logging
+import threading
 sensitivity = 12
 
 SCALELIGHT_ON = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
@@ -18,9 +20,10 @@ class data:
     partCount = 0
 
 def writefile(filedata):
-    if (os.path.isfile('/home/pi/scale/status')):
-        os.remove('/home/pi/scale/status')
-    status_file = open("/home/pi/scale/status", "w")
+    path = '/home/pi/scale/status'
+    if (os.path.isfile(path)):
+        os.remove(path)
+    status_file = open(path, "w")
     status_file.write("%s" % filedata)
 
 def parseData(datain):
@@ -63,57 +66,71 @@ def shutdown():
     writefile("Stopped")
     logging.info('Stopped')
 
-try:
-    #set initial values to off
-    logging.info('Begin program set switches off')
-    requests.post(url = BAGGERSWITCH_OFF)
-    requests.post(url = SCALELIGHT_OFF)
-    bagswitchstatus = False
-    #check if stop script file exists and remove it if so
-    if (os.path.isfile('/var/www/html/stop-script')):
-        os.remove("/var/www/html/stop-script")
-    logging.info('Reading initial data...')
-    writefile("Waiting on Initial Reading")
-    #get first data read
-    readdata()
-    writefile("Running")
-    previousweight = data.generalWeight
-    while (not os.path.isfile('/var/www/html/stop-script')):
-        try:
-            readdata()
-            if(previousweight <= data.generalWeight+.002 and previousweight >= data.generalWeight-.002): 
-                #if data changes less than .002 ignore data and update previous weight
-                previousweight = data.generalWeight
-                continue
-            elif(data.generalWeight < 0 or data.partCount == 0):
-                previousweight = data.generalWeight
-                continue
-            elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
-                #if weight changes by more than 1/sensitivity post switch on
-                    requests.post(url=SCALELIGHT_ON)
-                    requests.post(url=BAGGERSWITCH_ON)
-                    bagswitchstatus = True
-                    writefile("Tripped")
-                    while (bagswitchstatus):
-                        if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
-                            #wait for status to change to OFF
-                            time.sleep(2)
-                        else:
-                            #once OFF set switch off and read data again
-                            bagswitchstatus = False
-                            requests.post(url=BAGGERSWITCH_OFF)
-                            writefile("Waiting on reinitialized Reading")
-                            readdata()
-                            previousweight = data.generalWeight
-                    writefile("Running")
-            else:
-                previousweight = data.generalWeight
-        except Exception as e:
-            shutdown()
-            writefile("Error")
-            logging.error('some exception occurred\n' + str(e))
+def run():
+    try:
+        #set initial values to off
+        logging.info('Begin program set switches off')
+        requests.post(url = BAGGERSWITCH_OFF)
+        requests.post(url = SCALELIGHT_OFF)
+        bagswitchstatus = False
+        logging.info('Reading initial data...')
+        writefile("Waiting on Initial Reading")
+        #get first data read
+        readdata()
+        writefile("Running")
+        previousweight = data.generalWeight
+        while (True):
+            try:
+                readdata()
+                if(previousweight <= data.generalWeight+.002 and previousweight >= data.generalWeight-.002): 
+                    #if data changes less than .002 ignore data and update previous weight
+                    previousweight = data.generalWeight
+                    continue
+                elif(data.generalWeight < 0 or data.partCount == 0):
+                    previousweight = data.generalWeight
+                    continue
+                elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
+                    #if weight changes by more than 1/sensitivity post switch on
+                        requests.post(url=SCALELIGHT_ON)
+                        requests.post(url=BAGGERSWITCH_ON)
+                        bagswitchstatus = True
+                        writefile("Tripped")
+                        while (bagswitchstatus):
+                            
+                            if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
+                                #wait for status to change to OFF
+                                time.sleep(2)
+                            else:
+                                #once OFF set switch off and read data again
+                                bagswitchstatus = False
+                                requests.post(url=BAGGERSWITCH_OFF)
+                                writefile("Waiting on reinitialized Reading")
+                                readdata()
+                                previousweight = data.generalWeight
+                        writefile("Running")
+                else:
+                    previousweight = data.generalWeight
+            except Exception as e:
+                writefile("Error")
+                logging.error('some exception occurred\n' + str(e))
 
-except Exception as E:
-    shutdown()
-    writefile("Error")
-    logging.error('some exception occurred\n' + str(E))
+    except Exception as E:
+        shutdown()
+        writefile("Error")
+        logging.error('some exception occurred\n' + str(E))
+
+def main():
+    th = threading.Thread(name='run', target=run)
+    th.setDaemon(True)
+    th.start()
+    while (True):
+        #check if stop script file exists and remove it if so
+        if (os.path.isfile('/var/www/html/stop-script')):
+            writefile("Stopped")
+            logging.info("Stopping program")
+            shutdown()
+            return 0
+    time.sleep(2)
+
+if __name__ == '__main__':
+    main()
