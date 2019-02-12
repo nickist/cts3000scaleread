@@ -68,6 +68,8 @@ def shutdown():
 
 def run():
     try:
+        if(os.path.isfile('/var/www/html/stop-script')):
+            os.remove('/var/www/html/stop-script')
         #set initial values to off
         logging.info('Begin program set switches off')
         requests.post(url = BAGGERSWITCH_OFF)
@@ -81,8 +83,9 @@ def run():
         previousweight = data.generalWeight
         while (True):
             try:
+                logging.info('Running')
                 readdata()
-                if(previousweight <= data.generalWeight+.002 and previousweight >= data.generalWeight-.002): 
+                if(previousweight <= data.generalWeight+.001 and previousweight >= data.generalWeight-.001): 
                     #if data changes less than .002 ignore data and update previous weight
                     previousweight = data.generalWeight
                     continue
