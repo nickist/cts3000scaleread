@@ -1,4 +1,13 @@
 <?php   
+    header('Content-Type: text/event-stream');
+    header('Cache-Control: no-cache');
+    ///home/pi/scale/status
+    $path = "/home/nick/Desktop/status";
+    $myfile = fopen($path, "r") or die("Unable to open file!");
+    $message = fread($myfile,filesize("$path"));
+    fclose($myfile);
+
+    echo "data: {$message}";   
 
        if($_SERVER['REQUEST_METHOD'] === 'POST'){
         if(isset($_POST["startscale"])){
@@ -21,6 +30,7 @@
             }
         }
     }
+    flush();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,3 +40,4 @@
 <h1><a href="http://scalereader.local">go Back</a></h1>
 </body>
 </html>
+
