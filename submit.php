@@ -1,15 +1,14 @@
-<?php   
+<?php     
     header('Content-Type: text/event-stream');
     header('Cache-Control: no-cache');
-    ///home/pi/scale/status
-    $path = "/home/nick/Desktop/status";
+    $path = "/home/pi/scale/status";
     $myfile = fopen($path, "r") or die("Unable to open file!");
     $message = fread($myfile,filesize("$path"));
     fclose($myfile);
-
-    echo "data: {$message}";   
+    echo "data: {$message}"; 
 
        if($_SERVER['REQUEST_METHOD'] === 'POST'){
+        header('Content-Type: text/html');
         if(isset($_POST["startscale"])){
              exec('/home/pi/scale/checkRunningProcess.sh readScale.py', $isrunning);
             if($isrunning[0] == 'Running'){
@@ -30,7 +29,6 @@
             }
         }
     }
-    flush();
 ?>
 <!DOCTYPE html>
 <html lang="en">
