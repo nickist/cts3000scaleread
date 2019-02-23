@@ -2,11 +2,90 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" type="text/css" href="style.css">
-<script src="script.js"></script>
-<script> src="jquery-3.3.1.mini.js"</script>
 </head>
 <body>
+    <style>
+        body {
+            height: 100%;
+            background-color: cornsilk;
+        }
+        .wrapper {
+            text-align: center;
+        }
+        .start {
+            padding-bottom: 25px;
+        }
+        .stop {
+            padding-top: 25px;
+            padding-bottom: 25px;
+        }
+        .reset {
+            padding-top: 25px;
+        }
+        input[name="startscale"] {
+            background-color: green; /* Green */
+            width: 180px;
+            height: 90px;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 4px 2px;
+            border-radius: 20px;
+            -webkit-appearance: none;
+        }
+        input[name="stopscale"] {
+            background-color: red; /* Red */
+            border: none;
+            width: 180px;
+            height: 90px;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 4px 2px;
+            border-radius: 20px;
+            -webkit-appearance: none;
+        }
+        input[name="resetscale"] {
+            background-color: grey; /* Grey */
+            border: none;
+            width: 180px;
+            height: 90px;
+            color: white;
+            padding: 20px;
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 4px 2px;
+            border-radius: 20px;
+            -webkit-appearance: none;
+        }
+    </style>
+    <script>
+        if (typeof (EventSource) !== "undefined") {
+            var source = new EventSource("submit.php");
+            source.onmessage = function (event) {
+                document.getElementById("result").innerHTML = event.data;
+                if (event.data === "Running") {
+                    document.getElementById("result").style.color = "Green";
+                } else if (event.data === "Stopped" ||
+                    event.data === "Error" ||
+                    event.data === "Tripped") {
+                    document.getElementById("result").style.color = "Red";
+                } else {
+                    document.getElementById("result").style.color = "Blue";
+                }
+            };
+        } else {
+            document.getElementById("result").innerHTML = "Sorry, your browser does not support server-sent events...";
+        }
+    </script>
 <div class="wrapper">
 <h1> Read Scale</h1>
     <form action="submit.php" method="POST">
@@ -16,7 +95,6 @@
         <div class="reset"><input type ="submit" name = "resetscale" value = "Reset"/></div><br>
     </form>
 </div>
-
 </body>
 </html>
 
