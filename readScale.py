@@ -7,17 +7,16 @@ import sys
 import requests
 import logging
 import threading
-sensitivity = 12
 
-SCALELIGHT_ON = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
-SCALELIGHT_OFF = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
-BAGGERSWITCH_ON = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
-BAGGERSWITCH_OFF = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
 logging.basicConfig(filename='/home/pi/scale/readScale.log', level=logging.INFO)
 class data:
     generalWeight = 0
     unitWeight = 0
     partCount = 0
+    SCALELIGHT_ON = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
+    SCALELIGHT_OFF = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
+    BAGGERSWITCH_ON = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
+    BAGGERSWITCH_OFF = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
 
 def writefile(filedata):
     path = '/home/pi/scale/status'
@@ -61,17 +60,16 @@ def readdata():
 
 def shutdown():
     os.remove('/var/www/html/stop-script')
-    requests.post(url = SCALELIGHT_OFF)
-    requests.post(url = BAGGERSWITCH_OFF)
+    requests.post(url = data.SCALELIGHT_OFF)
+    requests.post(url = data.BAGGERSWITCH_OFF)
     writefile("Stopped\n")
-    logging.info('Stopped')
 
 def run():
     try:
+        sensitivity = 12
         #set initial values to off
-        logging.info('Begin program set switches off')
-        requests.post(url = BAGGERSWITCH_OFF)
-        requests.post(url = SCALELIGHT_OFF)
+        requests.post(url = data.BAGGERSWITCH_OFF)
+        requests.post(url = data.SCALELIGHT_OFF)
         bagswitchstatus = False
         logging.info('Reading initial data...')
         writefile("Waiting on Initial Reading\n")
@@ -81,7 +79,6 @@ def run():
         previousweight = data.generalWeight
         while (True):
             try:
-                logging.info('Running')
                 readdata()
                 if(previousweight <= data.generalWeight+.001 and previousweight >= data.generalWeight-.001): 
                     #if data changes less than .00 ignore data and update previous weight
@@ -92,8 +89,8 @@ def run():
                     continue
                 elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
                     #if weight changes by more than 1/sensitivity post switch on
-                        requests.post(url=SCALELIGHT_ON)
-                        requests.post(url=BAGGERSWITCH_ON)
+                        requests.post(url=data.SCALELIGHT_ON)
+                        requests.post(url=data.BAGGERSWITCH_ON)
                         bagswitchstatus = True
                         writefile("Tripped\n")
                         while (bagswitchstatus):
@@ -104,7 +101,7 @@ def run():
                             else:
                                 #once OFF set switch off and read data again
                                 bagswitchstatus = False
-                                requests.post(url=BAGGERSWITCH_OFF)
+                                requests.post(url=data.BAGGERSWITCH_OFF)
                                 writefile("Waiting on reinitialized Reading\n")
                                 readdata()
                                 previousweight = data.generalWeight
@@ -114,10 +111,10 @@ def run():
             except Exception as e:
                 writefile("Error")
                 logging.error('some exception occurred\n' + str(e))
-                requests.post(url=SCALELIGHT_ON)
-                requests.post(url=BAGGERSWITCH_ON)
-                requests.post(url=SCALELIGHT_OFF)
-                requests.post(url=SCALELIGHT_ON)
+                requests.post(url=data.SCALELIGHT_ON)
+                requests.post(url=data.BAGGERSWITCH_ON)
+                requests.post(url=data.SCALELIGHT_OFF)
+                requests.post(url=data.SCALELIGHT_ON)
 
                     
 
@@ -125,10 +122,10 @@ def run():
     except Exception as E:
         writefile("Error\n")
         logging.error('some exception occurred\n' + str(E))
-        requests.post(url=SCALELIGHT_ON)
-        requests.post(url=BAGGERSWITCH_ON)
-        requests.post(url=SCALELIGHT_OFF)
-        requests.post(url=SCALELIGHT_ON)
+        requests.post(url=data.SCALELIGHT_ON)
+        requests.post(url=data.BAGGERSWITCH_ON)
+        requests.post(url=data.SCALELIGHT_OFF)
+        requests.post(url=data.SCALELIGHT_ON)
 
 def main():
     if (os.path.isfile('/var/www/html/stop-script')):
@@ -140,7 +137,6 @@ def main():
         #check if stop script file exists and stop if so
         if (os.path.isfile('/var/www/html/stop-script')):
             writefile("Stopped\n")
-            logging.info("Stopping program")
             shutdown()
             return 0
     time.sleep(2)
