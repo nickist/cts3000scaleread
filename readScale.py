@@ -58,15 +58,24 @@ def readdata():
             data.partCount = dataIn
     ser.close()
 
+def handleError(Exception E):
+        writefile("Error\n")
+        logging.error('some exception occurred\n' + str(E))
+        requests.post(url=data.SCALELIGHT_ON)
+        requests.post(url=data.BAGGERSWITCH_ON)
+        sleep(1)
+        requests.post(url=data.SCALELIGHT_OFF)
+        sleep(1)
+        requests.post(url=data.SCALELIGHT_ON)
+
 def shutdown():
     os.remove('/var/www/html/stop-script')
     requests.post(url = data.SCALELIGHT_OFF)
     requests.post(url = data.BAGGERSWITCH_OFF)
     writefile("Stopped\n")
 
-def run():
+def run(sensitivity = 12):
     try:
-        sensitivity = 12
         #set initial values to off
         requests.post(url = data.BAGGERSWITCH_OFF)
         requests.post(url = data.SCALELIGHT_OFF)
@@ -78,16 +87,8 @@ def run():
         writefile("Running\n")
         previousweight = data.generalWeight
         while (True):
-            try:
                 readdata()
-                if(previousweight <= data.generalWeight+.001 and previousweight >= data.generalWeight-.001): 
-                    #if data changes less than .00 ignore data and update previous weight
-                    previousweight = data.generalWeight
-                    continue
-                elif(data.generalWeight < 0 or data.partCount == 0):
-                    previousweight = data.generalWeight
-                    continue
-                elif (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
+                if (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
                     #if weight changes by more than 1/sensitivity post switch on
                         requests.post(url=data.SCALELIGHT_ON)
                         requests.post(url=data.BAGGERSWITCH_ON)
@@ -108,38 +109,26 @@ def run():
                         writefile("Running\n")
                 else:
                     previousweight = data.generalWeight
-            except Exception as e:
-                writefile("Error")
-                logging.error('some exception occurred\n' + str(e))
-                requests.post(url=data.SCALELIGHT_ON)
-                requests.post(url=data.BAGGERSWITCH_ON)
-                requests.post(url=data.SCALELIGHT_OFF)
-                requests.post(url=data.SCALELIGHT_ON)
-
-                    
-
-
     except Exception as E:
-        writefile("Error\n")
-        logging.error('some exception occurred\n' + str(E))
-        requests.post(url=data.SCALELIGHT_ON)
-        requests.post(url=data.BAGGERSWITCH_ON)
-        requests.post(url=data.SCALELIGHT_OFF)
-        requests.post(url=data.SCALELIGHT_ON)
+        handleError(E)
 
 def main():
-    if (os.path.isfile('/var/www/html/stop-script')):
-        os.remove('/var/www/html/stop-script')
-    th = threading.Thread(name='run', target=run)
-    th.setDaemon(True)
-    th.start()
-    while (True):
-        #check if stop script file exists and stop if so
+    try:
         if (os.path.isfile('/var/www/html/stop-script')):
-            writefile("Stopped\n")
-            shutdown()
-            return 0
-    time.sleep(2)
+            os.remove('/var/www/html/stop-script')
+        th = threading.Thread(name='run', target=run)
+        th.setDaemon(True)
+        th.start()
+        while (True):
+            #check if stop script file exists and stop if so
+            if (os.path.isfile('/var/www/html/stop-script')):
+                writefile("Stopped\n")
+                shutdown()
+                return 0
+        time.sleep(2)
+    except Exception as E:
+        handleError(E)
+
 
 if __name__ == '__main__':
     main()
