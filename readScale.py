@@ -58,23 +58,13 @@ def readdata():
             data.partCount = dataIn
     ser.close()
 
-def handleError(Exception E):
-        writefile("Error\n")
-        logging.error('some exception occurred\n' + str(E))
-        requests.post(url=data.SCALELIGHT_ON)
-        requests.post(url=data.BAGGERSWITCH_ON)
-        sleep(1)
-        requests.post(url=data.SCALELIGHT_OFF)
-        sleep(1)
-        requests.post(url=data.SCALELIGHT_ON)
-
 def shutdown():
     os.remove('/var/www/html/stop-script')
     requests.post(url = data.SCALELIGHT_OFF)
     requests.post(url = data.BAGGERSWITCH_OFF)
     writefile("Stopped\n")
 
-def run(sensitivity = 12):
+def run(sensitivity = 10):
     try:
         #set initial values to off
         requests.post(url = data.BAGGERSWITCH_OFF)
@@ -127,7 +117,14 @@ def main():
                 return 0
         time.sleep(2)
     except Exception as E:
-        handleError(E)
+        writefile("Error\n")
+        logging.error('some exception occurred\n' + str(E))
+        requests.post(url=data.SCALELIGHT_ON)
+        requests.post(url=data.BAGGERSWITCH_ON)
+        sleep(1)
+        requests.post(url=data.SCALELIGHT_OFF)
+        sleep(1)
+        requests.post(url=data.SCALELIGHT_ON)
 
 
 if __name__ == '__main__':
