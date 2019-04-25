@@ -1,5 +1,7 @@
 #!/home/pi/scale/bin/python3
+from tornado import websocket
 
+import tornado.ioloop
 import serial
 import time
 import os
@@ -9,21 +11,45 @@ import logging
 import threading
 
 logging.basicConfig(filename='/home/pi/scale/readScale.log', level=logging.INFO)
+lock = threading.lock()
+
+class EchoWebSocket(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        return True
+    def open(self):
+        print ("Websocket Opened")
+
+    def on_message(self, message):
+        if(message != "stop"):
+            self.write_message(u"%s" % message)
+        else:
+            lock.acquire()
+            data.status = "Stopped"
+            lock.release()
+    def on_close(self):
+        print ("Websocket closed")
+
+
 class data:
     generalWeight = 0
     unitWeight = 0
     partCount = 0
+    status = ""
     SCALELIGHT_ON = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
     SCALELIGHT_OFF = "http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
     BAGGERSWITCH_ON = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20on"
     BAGGERSWITCH_OFF = "http://baggerswitch.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20off"
 
 def writefile(filedata):
-    path = '/home/pi/scale/status'
-    if (os.path.isfile(path)):
-        os.remove(path)
-    status_file = open(path, "w")
-    status_file.write("%s" % filedata)
+    lock.acquire()
+    data.status = filedata
+    lock.release()
+    # path = '/home/pi/scale/status'
+    # if (os.path.isfile(path)):
+    #     os.remove(path)
+    # status_file = open(path, "w")
+    # status_file.write("%s" % filedata)
+    
 
 def parseData(datain):
     returndata = ''
@@ -59,10 +85,13 @@ def readdata():
     ser.close()
 
 def shutdown():
-    os.remove('/var/www/html/stop-script')
+    # os.remove('/var/www/html/stop-script')
+    lock.acquire()
+    data.status = "Stopped"
+    lock.release()
     requests.post(url = data.SCALELIGHT_OFF)
     requests.post(url = data.BAGGERSWITCH_OFF)
-    writefile("Stopped\n")
+    # writefile("Stopped\n")
 
 def run(sensitivity = 10):
     try:
@@ -100,18 +129,28 @@ def run(sensitivity = 10):
                 else:
                     previousweight = data.generalWeight
     except Exception as E:
-        handleError(E)
+        print(E)
 
+def startWS():
+    application = tornado.web.Application([(r"/", EchoWebSocket),])
+    application.listen(9000)
+    tornado.ioloop.IOLoop.instance().start()
 def main():
     try:
-        if (os.path.isfile('/var/www/html/stop-script')):
-            os.remove('/var/www/html/stop-script')
+        thr = threading.Thread(name='startWS', target=startWS)
+        thr.setDaemon(True)
+        thr.start()
+        if (data.status == "Stopped"):
+            data.status = "starting"
+        # if (os.path.isfile('/var/www/html/stop-script')):
+        #     os.remove('/var/www/html/stop-script')
         th = threading.Thread(name='run', target=run)
         th.setDaemon(True)
         th.start()
         while (True):
             #check if stop script file exists and stop if so
-            if (os.path.isfile('/var/www/html/stop-script')):
+            # if (os.path.isfile('/var/www/html/stop-script')):
+            if(data.status == "Stopped"):
                 writefile("Stopped\n")
                 shutdown()
                 return 0
@@ -121,11 +160,12 @@ def main():
         logging.error('some exception occurred\n' + str(E))
         requests.post(url=data.SCALELIGHT_ON)
         requests.post(url=data.BAGGERSWITCH_ON)
-        sleep(1)
+        time.sleep(1)
         requests.post(url=data.SCALELIGHT_OFF)
-        sleep(1)
+        time.sleep(1)
         requests.post(url=data.SCALELIGHT_ON)
 
 
 if __name__ == '__main__':
     main()
+    

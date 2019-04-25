@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="client.js"></script>
 </head>
-<body>
+<body>  
     <style>
         body {
             height: 100%;
@@ -14,15 +16,6 @@
         }
         .start {
             padding-bottom: 25px;
-        }
-        .stop {
-            padding-top: 25px;
-            padding-bottom: 25px;
-        }
-        .reset {
-            padding-top: 25px;
-        }
-        input[name="startscale"] {
             background-color: green; /* Green */
             width: 180px;
             height: 90px;
@@ -36,7 +29,9 @@
             border-radius: 20px;
             -webkit-appearance: none;
         }
-        input[name="stopscale"] {
+        .stop {
+            padding-top: 25px;
+            padding-bottom: 25px;
             background-color: red; /* Red */
             border: none;
             width: 180px;
@@ -51,7 +46,8 @@
             border-radius: 20px;
             -webkit-appearance: none;
         }
-        input[name="resetscale"] {
+        .reset {
+            padding-top: 25px;
             background-color: grey; /* Grey */
             border: none;
             width: 180px;
@@ -66,35 +62,18 @@
             border-radius: 20px;
             -webkit-appearance: none;
         }
+       
     </style>
-    <script>
-        if (typeof (EventSource) !== "undefined") {
-            var source = new EventSource("submit.php");
-            source.onmessage = function (event) {
-                document.getElementById("result").innerHTML = event.data;
-                if (event.data === "Running") {
-                    document.getElementById("result").style.color = "Green";
-                } else if (event.data === "Stopped" ||
-                    event.data === "Error" ||
-                    event.data === "Tripped") {
-                    document.getElementById("result").style.color = "Red";
-                } else {
-                    document.getElementById("result").style.color = "Blue";
-                }
-            };
-        } else {
-            document.getElementById("result").innerHTML = "Sorry, your browser does not support server-sent events...";
-        }
-    </script>
-<div class="wrapper">
+    <div class="wrapper">
 <h1> Read Scale</h1>
-    <form action="submit.php" method="POST">
+    
         <h2>Status: <span id="result" class="status"></span></h2>
-        <div class="start"><input type ="submit" name = "startscale" value = "Start"/></div><br>
-        <div class="stop"><input type ="submit" name = "stopscale" value = "Stop"/></div><br>
-        <div class="reset"><input type ="submit" name = "resetscale" value = "Reset"/></div><br>
-    </form>
+        <div class="start" id="startbutton">Start</div><br>
+        <div class="stop" id="stopbutton">Stop</div><br>
+        <div class="reset" id="resetbutton">Reset</div><br>
+    
 </div>
+
 </body>
 </html>
 
