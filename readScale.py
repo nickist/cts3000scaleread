@@ -1,8 +1,8 @@
-#!/home/pi/scale/bin/python3
+
 from tornado import websocket
 
-import tornado.ioloop
-import serial
+import tornado.web
+import serial, asyncio
 import time
 import os
 import sys
@@ -10,24 +10,34 @@ import requests
 import logging
 import threading
 
-logging.basicConfig(filename='/home/pi/scale/readScale.log', level=logging.INFO)
-lock = threading.lock()
+# logging.basicConfig(filename='/home/pi/scale/readScale.log', level=logging.INFO)
+lock = threading.Lock()
 
-class EchoWebSocket(websocket.WebSocketHandler):
-    def check_origin(self, origin):
-        return True
-    def open(self):
-        print ("Websocket Opened")
+class Myhanlder(tornado.web.RequestHandler):
+    def get(self):
+        self.write("test success")
+    
 
-    def on_message(self, message):
-        if(message != "stop"):
-            self.write_message(u"%s" % message)
-        else:
-            lock.acquire()
-            data.status = "Stopped"
-            lock.release()
-    def on_close(self):
-        print ("Websocket closed")
+class WebServer(tornado.web.Application):
+
+    def __init__(self):
+        handlers = [ (r"/test", Myhanlder), ]
+        settings = {'debug': True}
+        super().__init__(handlers, **settings)
+
+    def run(self, port=9000):
+        self.listen(port)
+        tornado.ioloop.IOLoop.instance().start()
+
+ws = WebServer()
+
+
+
+
+
+def start_server():
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    ws.run()
 
 
 class data:
@@ -132,9 +142,8 @@ def run(sensitivity = 10):
         print(E)
 
 def startWS():
-    application = tornado.web.Application([(r"/", EchoWebSocket),])
-    application.listen(9000)
-    tornado.ioloop.IOLoop.instance().start()
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    ws.run()
 def main():
     try:
         thr = threading.Thread(name='startWS', target=startWS)
