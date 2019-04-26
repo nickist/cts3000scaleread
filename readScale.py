@@ -16,7 +16,9 @@ lock = threading.Lock()
 class Myhanlder(tornado.web.RequestHandler):
     def get(self):
         self.write("test success")
-    
+    def check_origin(self, origin):
+        return True
+        
 
 class WebServer(tornado.web.Application):
 
@@ -90,56 +92,51 @@ def readdata():
             x+=1
             data.unitWeight = dataIn
         elif (x == 2):
-            x+=1
             data.partCount = dataIn
     ser.close()
 
 def shutdown():
     # os.remove('/var/www/html/stop-script')
-    lock.acquire()
-    data.status = "Stopped"
-    lock.release()
     requests.post(url = data.SCALELIGHT_OFF)
     requests.post(url = data.BAGGERSWITCH_OFF)
-    # writefile("Stopped\n")
+    writefile("Stopped\n")
 
 def run(sensitivity = 10):
-    try:
-        #set initial values to off
-        requests.post(url = data.BAGGERSWITCH_OFF)
-        requests.post(url = data.SCALELIGHT_OFF)
-        bagswitchstatus = False
-        logging.info('Reading initial data...')
-        writefile("Waiting on Initial Reading\n")
-        #get first data read
-        readdata()
-        writefile("Running\n")
-        previousweight = data.generalWeight
-        while (True):
-                readdata()
-                if (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
-                    #if weight changes by more than 1/sensitivity post switch on
-                        requests.post(url=data.SCALELIGHT_ON)
-                        requests.post(url=data.BAGGERSWITCH_ON)
-                        bagswitchstatus = True
-                        writefile("Tripped\n")
-                        while (bagswitchstatus):
-                            
-                            if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
-                                #wait for status to change to OFF
-                                time.sleep(2)
-                            else:
-                                #once OFF set switch off and read data again
-                                bagswitchstatus = False
-                                requests.post(url=data.BAGGERSWITCH_OFF)
-                                writefile("Waiting on reinitialized Reading\n")
-                                readdata()
-                                previousweight = data.generalWeight
-                        writefile("Running\n")
-                else:
-                    previousweight = data.generalWeight
-    except Exception as E:
-        print(E)
+
+    #set initial values to off
+    requests.post(url = data.BAGGERSWITCH_OFF)
+    requests.post(url = data.SCALELIGHT_OFF)
+    bagswitchstatus = False
+    logging.info('Reading initial data...')
+    writefile("Waiting on Initial Reading\n")
+    #get first data read
+    readdata()
+    writefile("Running\n")
+    previousweight = data.generalWeight
+    while (True):
+            readdata()
+            if (previousweight + data.unitWeight > data.generalWeight + data.unitWeight/sensitivity or previousweight + data.unitWeight < data.generalWeight - data.unitWeight/sensitivity):
+                #if weight changes by more than 1/sensitivity post switch on
+                    requests.post(url=data.SCALELIGHT_ON)
+                    requests.post(url=data.BAGGERSWITCH_ON)
+                    bagswitchstatus = True
+                    writefile("Tripped\n")
+                    while (bagswitchstatus):
+                        
+                        if(str(requests.get(url="http://scalelight.local/cm?user=admin&password=oijaufdjkvdsui&cmnd=Power%20").json())[11:-2] == "ON"):
+                            #wait for status to change to OFF
+                            time.sleep(2)
+                        else:
+                            #once OFF set switch off and read data again
+                            bagswitchstatus = False
+                            requests.post(url=data.BAGGERSWITCH_OFF)
+                            writefile("Waiting on reinitialized Reading\n")
+                            readdata()
+                            previousweight = data.generalWeight
+                    writefile("Running\n")
+            else:
+                previousweight = data.generalWeight
+    
 
 def startWS():
     asyncio.set_event_loop(asyncio.new_event_loop())
@@ -166,6 +163,7 @@ def main():
         time.sleep(2)
     except Exception as E:
         writefile("Error\n")
+        lock.release()
         logging.error('some exception occurred\n' + str(E))
         requests.post(url=data.SCALELIGHT_ON)
         requests.post(url=data.BAGGERSWITCH_ON)
@@ -173,6 +171,7 @@ def main():
         requests.post(url=data.SCALELIGHT_OFF)
         time.sleep(1)
         requests.post(url=data.SCALELIGHT_ON)
+        return -1
 
 
 if __name__ == '__main__':
