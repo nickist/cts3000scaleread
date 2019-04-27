@@ -3,6 +3,10 @@
         if ("WebSocket" in window) {    
              // Let us open a web socket
              var ws = new WebSocket("ws://127.0.0.1:9000");
+             ws.onmessage = function (evt) { 
+              var received_msg = evt.data;
+                $(".status").text(received_msg);
+              };
             $(document).on("click", "#startbutton", function() {
                  var i;
                  i++;
@@ -10,10 +14,7 @@
                     ws.send("Start");
                     
                 
-                    ws.onmessage = function (evt) { 
-                    var received_msg = evt.data;
-                      $(".status").text(received_msg);
-                    };
+                    
                 
                     ws.onclose = function() {                     
                     // websocket is closed.

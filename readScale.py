@@ -13,25 +13,32 @@ import threading
 # logging.basicConfig(filename='/home/pi/scale/readScale.log', level=logging.INFO)
 lock = threading.Lock()
 
-class Myhanlder(tornado.web.RequestHandler):
+class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("test success")
     def check_origin(self, origin):
         return True
-        
 
-class WebServer(tornado.web.Application):
 
-    def __init__(self):
-        handlers = [ (r"/test", Myhanlder), ]
-        settings = {'debug': True}
-        super().__init__(handlers, **settings)
+class SimpleWebSocket(tornado.websocket.WebSocketHandler):
+    connections = set()
+ 
+    def open(self):
+        self.connections.add(self)
+ 
+    def on_message(self, message):
+        [client.write_message(message) for client in self.connections]
+ 
+    def on_close(self):
+        self.connections.remove(self)
+ 
+def make_app():
+    return tornado.web.Application([
+    (r"/", MainHandler),
+    (r"/websocket", SimpleWebSocket)
+])     
 
-    def run(self, port=9000):
-        self.listen(port)
-        tornado.ioloop.IOLoop.instance().start()
 
-ws = WebServer()
 
 
 
@@ -139,8 +146,10 @@ def run(sensitivity = 10):
     
 
 def startWS():
-    asyncio.set_event_loop(asyncio.new_event_loop())
-    ws.run()
+    app = make_app()
+    app.listen(9000)
+    tornado.ioloop.IOLoop.current().start()
+
 def main():
     try:
         thr = threading.Thread(name='startWS', target=startWS)
